@@ -41,10 +41,10 @@ target_test = CustomDataLoader(ds2, batch_size=batch_size, num_threads=2)
 setGPU('5')
 log = Logger('log/step_1', clear=True)
 
-discriminator_t = CLS_0(2048,2,bottle_neck_dim = 256).cuda()
-discriminator_p = Discriminator(n = 10).cuda()
-feature_extractor = ResNetFc(model_name='resnet50',model_path='/home/liuhong/data/pytorchModels/resnet50.pth')
-cls = CLS(feature_extractor.output_num(), 11, bottle_neck_dim=256)
+discriminator_t = CLS_0(2048,2,bottle_neck_dim = 256).cuda()#Gb
+discriminator_p = Discriminator(n = 10).cuda() #multi-classify Gc
+feature_extractor = ResNetFc(model_name='resnet50',model_path='/home/liuhong/data/pytorchModels/resnet50.pth')#Gf
+cls = CLS(feature_extractor.output_num(), 11, bottle_neck_dim=256)#Gy
 net = nn.Sequential(feature_extractor, cls).cuda()
 
 scheduler = lambda step, initial_lr : inverseDecaySheduler(step, initial_lr, gamma=10, power=0.75, max_iter=10000)
@@ -68,9 +68,9 @@ while k <500:
         fs1, feature_source, __, predict_prob_source = net.forward(im_source)
         ft1, feature_target, __, predict_prob_target = net.forward(im_target)
         
-        p0 = discriminator_p.forward(fs1)
+        p0 = discriminator_p.forward(fs1)#源域经过Gc
         p1 = discriminator_p.forward(ft1)
-        p2 = torch.sum(p1, dim = -1)
+        p2 = torch.sum(p1, dim = -1)#目标域经过Gc，结果为konw的概率
      
         # =========================rank the output of the multi-binary classifiers
         __,_,_,dptarget = discriminator_t.forward(ft1.detach())
@@ -85,8 +85,8 @@ while k <500:
         _,_,_,pred01 = discriminator_t.forward(feature_otherep1)
 
         # =========================loss function
-        ce = CrossEntropyLoss(label_source, predict_prob_source)
-        d1 = BCELossForMultiClassification(label_source[:,0:10],p0)
+        ce = CrossEntropyLoss(label_source, predict_prob_source)#Lcls/s
+        d1 = BCELossForMultiClassification(label_source[:,0:10],p0)#Ls
         
         with OptimizerManager([optimizer_cls, optimizer_discriminator_p]):
             loss = ce + d1  
